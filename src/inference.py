@@ -20,16 +20,19 @@ CHECKPOINT_PATHS = {
 
 logger = logging.getLogger()
 
+
 def get_boundaries(list_of_frames_binary):
     result = []
     previous_digit = 0
+    digit = 0
+    position = 0
 
     for position, digit in enumerate(list_of_frames_binary):
-        if ((digit == 1) and (previous_digit == 0)):
+        if (digit == 1) and (previous_digit == 0):
             result.append([position])
             previous_digit = 1
 
-        elif ((digit == 0) and (previous_digit == 1)):
+        elif (digit == 0) and (previous_digit == 1):
             result[-1].append(position - 1)
             previous_digit = 0
 
@@ -45,7 +48,7 @@ def get_boundaries(list_of_frames_binary):
 def save_output_video(source, boundaries, save_path, prediction_summary, write_with_moviepy=False):
     # write_with_moviepy if True write video summary with audio
     if write_with_moviepy:
-        print('Moviepy write summary')
+        logger.info('Moviepy write summary')
         clip = VideoFileClip(source)
 
         # clip list
@@ -56,7 +59,8 @@ def save_output_video(source, boundaries, save_path, prediction_summary, write_w
         final.write_videofile(save_path)
 
     else:
-        print('cv2 write summary')
+        logger.info('cv2 write summary')
+        logger.info(f'prediction_summary len: {len(prediction_summary)}')
 
         # load original video
         cap = cv2.VideoCapture(source)
@@ -74,6 +78,9 @@ def save_output_video(source, boundaries, save_path, prediction_summary, write_w
             if not ret:
                 break
 
+            if frame_idx == len(prediction_summary):
+                break
+
             if prediction_summary[frame_idx]:
                 out.write(frame)
 
@@ -82,7 +89,7 @@ def save_output_video(source, boundaries, save_path, prediction_summary, write_w
         out.release()
         cap.release()
 
-    print(f'Saved to {save_path}')
+    logger.info(f'Saved to {save_path}')
 
 
 def load_model(args):
@@ -156,7 +163,7 @@ def main():
 
                 scores, _ = model(frame_features)  # [1, seq_len]
                 scores = scores.squeeze(0).cpu().numpy().tolist()
-                pred_summ = generate_summary([cps], [scores], [n_frames], [picks])[0]
+                pred_summ = generate_summary([cps], [scores], [n_frames], [picks], args.final_frame_length * 30)[0]
 
             else:
                 raise ValueError('Invalid model type', args.model)

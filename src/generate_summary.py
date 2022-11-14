@@ -2,9 +2,12 @@
 import numpy as np
 from knapsack_implementation import knapSack
 
-MAX_FRAMES_IN_SUMMARY = 15 * 30  # 15 frames, 30th frame is taken
+# MAX_FRAMES_IN_SUMMARY = 15 * 30  # 15 frames, 30 sec
 
-def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions):
+MIN_PENALTY_SHOT_LENGTH = 6 * 30
+MIN_SHOT_LENGTH = 4 * 30
+
+def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions, final_frame_length):
     """ Generate the automatic machine summary, based on the video shots; the frame importance scores; the number of
     frames in the original video and the position of the sub-sampled frames of the original video.
 
@@ -40,12 +43,20 @@ def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions):
         shot_lengths = []
         for shot in shot_bound:
             shot_lengths.append(shot[1] - shot[0] + 1)
-            shot_imp_scores.append((frame_scores[shot[0]:shot[1] + 1].mean()).item())
+
+            if (shot[1] - shot[0]) < MIN_SHOT_LENGTH:
+                length_penalty = 0.
+            elif (shot[1] - shot[0]) < MIN_PENALTY_SHOT_LENGTH:
+                length_penalty = 0.1
+            else:
+                length_penalty = 1.
+
+            shot_imp_scores.append((frame_scores[shot[0]:shot[1] + 1].mean() * length_penalty).item())
 
         # Select the best shots using the knapsack implementation
         final_shot = shot_bound[-1]
         # final_max_length = int((final_shot[1] + 1) * 0.15)
-        final_max_length = min(MAX_FRAMES_IN_SUMMARY, int((final_shot[1] + 1)))
+        final_max_length = min(final_frame_length, int((final_shot[1] + 1)))
 
         selected = knapSack(final_max_length, shot_lengths, shot_imp_scores, len(shot_lengths))
 

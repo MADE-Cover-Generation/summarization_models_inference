@@ -16,8 +16,9 @@ ort_session = onnxruntime.InferenceSession("../models/feature_extraction_googlen
 
 from kts.cpd_auto import cpd_auto
 
-
-MAX_SHOT_LENGTH = 14 * 30 # 14 frames and each 30th is taken
+SAMPLE_RATE = 30
+MAX_SHOT_LENGTH = 15 * 30 # 15 frames and 30 sec
+MIN_SHOT_LENGTH = 5 * 30  # 5 frames
 N_FRAMES_IN_ONE_PART = 300 # for KTS
 
 logger = logging.getLogger()
@@ -140,9 +141,11 @@ class VideoPreprocessor(object):
 
         change_points *= self.sample_rate
         change_points = np.hstack((0, change_points, n_frames))
-        begin_frames = change_points[:-1]
-        end_frames = change_points[1:]
-        change_points = np.vstack((begin_frames, end_frames - 1)).T
+        begin_frames = change_points[:-1] + self.sample_rate
+        end_frames = change_points[1:] - self.sample_rate
+        change_points = np.vstack((begin_frames, end_frames)).T
+
+        change_points = np.array([cp for cp in change_points if cp[1] - cp[0] > self.sample_rate])
 
         divide_intervals_start = time.time()
         if divide_intervals_shorter:
@@ -153,7 +156,9 @@ class VideoPreprocessor(object):
         logger.info(f"VideoPreprocessor kts time: {time.time() - start_time}")
         return change_points, n_frame_per_seg, picks
 
-    def process_interval(self, interval, max_shot_length=MAX_SHOT_LENGTH):
+    def process_interval(self, interval, max_shot_length=MAX_SHOT_LENGTH,
+                         min_shot_length=MIN_SHOT_LENGTH):
+
         start_interval = interval[0]
         end_interval = interval[1]
 
@@ -161,22 +166,30 @@ class VideoPreprocessor(object):
             return [interval]
 
         divided_interval = []
-        n_short_intervals = int((end_interval - start_interval + max_shot_length - 1) / max_shot_length)
+        n_short_intervals = int((end_interval - start_interval - 1) / max_shot_length)
         start = start_interval
 
         for i in range(1, n_short_intervals):
             divided_interval.append([start, start + max_shot_length])
             start = start + max_shot_length + 1
 
-        if start <= end_interval:
-            divided_interval.append([start, end_interval])
+        if (end_interval - start) <= max_shot_length:
+            # one big interval
+            if start <= end_interval:
+                divided_interval.append([start, end_interval])
+
+        elif (end_interval - start) <= max_shot_length + min_shot_length:
+            # one big interval and 1 short interval
+            new_step = int((max_shot_length + min_shot_length) / 2)
+            divided_interval.append([start, start + new_step])
+            divided_interval.append([start + new_step + 1, end_interval])
+
+        else:
+            # two big intervals
+            divided_interval.append([start, start + max_shot_length])
+            divided_interval.append([start + max_shot_length + 1, end_interval])
 
         return divided_interval
-
-    # assert process_interval([10, 15]) == [[10, 15]]
-    # assert process_interval([10, 50]) == [[10, 25], [26, 41], [42, 50]]
-    # assert process_interval([10, 42]) == [[10, 25], [26, 41], [42, 42]]
-    # assert process_interval([10, 41]) == [[10, 25], [26, 41]]
 
     def divide_intervals(self, change_points, max_shot_length=MAX_SHOT_LENGTH):
         final_intervals = []

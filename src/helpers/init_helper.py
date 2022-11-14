@@ -52,6 +52,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--sample-rate', type=int, default=30)
     parser.add_argument('--source', type=str, default=None)
     parser.add_argument('--save-path', type=str, default=None)
+    parser.add_argument('--final-frame-length', type=int, default=30)
 
     # common model config dsnet
     parser.add_argument('--base-model', type=str, default='attention',
