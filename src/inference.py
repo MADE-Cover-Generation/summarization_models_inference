@@ -154,8 +154,13 @@ def main():
                 pred_bboxes = np.clip(pred_bboxes, 0, frame_features_len).round().astype(np.int32)
 
                 pred_cls, pred_bboxes = bbox_helper.nms(pred_cls, pred_bboxes, args.nms_thresh)
-                pred_summ = vsumm_helper.bbox2summary(
-                    frame_features_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
+                scores = vsumm_helper.bbox2scores(
+                    frame_features_len, pred_cls, pred_bboxes)
+
+                pred_summ = generate_summary([cps], [scores], [n_frames], [picks], args.final_frame_length * 30)[0]
+
+                # pred_summ = vsumm_helper.bbox2summary(
+                #     frame_features_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
 
             elif args.model.lower() in ['casum', 'pglsum']:
                 frame_features = torch.Tensor(frame_features).view(-1, 1024)

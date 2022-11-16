@@ -49,7 +49,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--nms-thresh', type=float, default=0.5)
 
     # inference
-    parser.add_argument('--sample-rate', type=int, default=30)
+    parser.add_argument('--sample-rate', type=int, default=15)
     parser.add_argument('--source', type=str, default=None)
     parser.add_argument('--save-path', type=str, default=None)
     parser.add_argument('--final-frame-length', type=int, default=30)

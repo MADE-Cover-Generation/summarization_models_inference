@@ -141,7 +141,7 @@ class VideoPreprocessor(object):
 
         change_points *= self.sample_rate
         change_points = np.hstack((0, change_points, n_frames))
-        begin_frames = change_points[:-1] + self.sample_rate
+        begin_frames = change_points[:-1]
         end_frames = change_points[1:] - self.sample_rate
         change_points = np.vstack((begin_frames, end_frames)).T
 
@@ -162,7 +162,7 @@ class VideoPreprocessor(object):
         start_interval = interval[0]
         end_interval = interval[1]
 
-        if end_interval - start_interval <= max_shot_length:
+        if end_interval - start_interval <= max_shot_length - 1:
             return [interval]
 
         divided_interval = []
@@ -170,24 +170,24 @@ class VideoPreprocessor(object):
         start = start_interval
 
         for i in range(1, n_short_intervals):
-            divided_interval.append([start, start + max_shot_length])
-            start = start + max_shot_length + 1
+            divided_interval.append([start, start + max_shot_length - 1])
+            start = start + max_shot_length
 
-        if (end_interval - start) <= max_shot_length:
+        if (end_interval - start) <= max_shot_length - 1:
             # one big interval
             if start <= end_interval:
                 divided_interval.append([start, end_interval])
 
-        elif (end_interval - start) <= max_shot_length + min_shot_length:
+        elif (end_interval - start) <= max_shot_length + min_shot_length - 1:
             # one big interval and 1 short interval
             new_step = int((max_shot_length + min_shot_length) / 2)
-            divided_interval.append([start, start + new_step])
-            divided_interval.append([start + new_step + 1, end_interval])
+            divided_interval.append([start, start + new_step - 1])
+            divided_interval.append([start + new_step, end_interval])
 
         else:
             # two big intervals
-            divided_interval.append([start, start + max_shot_length])
-            divided_interval.append([start + max_shot_length + 1, end_interval])
+            divided_interval.append([start, start + max_shot_length - 1])
+            divided_interval.append([start + max_shot_length, end_interval])
 
         return divided_interval
 
@@ -201,14 +201,59 @@ class VideoPreprocessor(object):
         final_intervals = np.concatenate(final_intervals)
         return final_intervals
 
-    # assert np.allclose(divide_intervals([[10, 50]]),
-    #                    np.array([[10, 25], [26, 41], [42, 50]]))
-    # assert np.allclose(divide_intervals([[10, 50], [51, 55]]),
-    #                    np.array([[10, 25], [26, 41], [42, 50], [51, 55]]))
-    # assert np.allclose(divide_intervals([[10, 50], [51, 66]]),
-    #                    np.array([[10, 25], [26, 41], [42, 50], [51, 66]]))
-    # assert np.allclose(divide_intervals([[10, 50], [51, 66], [67, 97]]),
-    #                    np.array([[10, 25], [26, 41], [42, 50], [51, 66], [67, 82], [83, 97]]))
+    # def process_interval(self, interval, max_shot_length=MAX_SHOT_LENGTH,
+    #                      min_shot_length=MIN_SHOT_LENGTH):
+    #
+    #     start_interval = interval[0]
+    #     end_interval = interval[1]
+    #
+    #     if end_interval - start_interval <= max_shot_length:
+    #         return [interval]
+    #
+    #     divided_interval = []
+    #     n_short_intervals = int((end_interval - start_interval - 1) / max_shot_length)
+    #     start = start_interval
+    #
+    #     for i in range(1, n_short_intervals):
+    #         divided_interval.append([start, start + max_shot_length])
+    #         start = start + max_shot_length + 1
+    #
+    #     if (end_interval - start) <= max_shot_length:
+    #         # one big interval
+    #         if start <= end_interval:
+    #             divided_interval.append([start, end_interval])
+    #
+    #     elif (end_interval - start) <= max_shot_length + min_shot_length:
+    #         # one big interval and 1 short interval
+    #         new_step = int((max_shot_length + min_shot_length) / 2)
+    #         divided_interval.append([start, start + new_step])
+    #         divided_interval.append([start + new_step + 1, end_interval])
+    #
+    #     else:
+    #         # two big intervals
+    #         divided_interval.append([start, start + max_shot_length])
+    #         divided_interval.append([start + max_shot_length + 1, end_interval])
+    #
+    #     return divided_interval
+    #
+    # def divide_intervals(self, change_points, max_shot_length=MAX_SHOT_LENGTH):
+    #     final_intervals = []
+    #
+    #     for interval in change_points:
+    #         processed = self.process_interval(interval, max_shot_length=max_shot_length)
+    #         final_intervals.append(processed)
+    #
+    #     final_intervals = np.concatenate(final_intervals)
+    #     return final_intervals
+    #
+    # # assert np.allclose(divide_intervals([[10, 50]]),
+    # #                    np.array([[10, 25], [26, 41], [42, 50]]))
+    # # assert np.allclose(divide_intervals([[10, 50], [51, 55]]),
+    # #                    np.array([[10, 25], [26, 41], [42, 50], [51, 55]]))
+    # # assert np.allclose(divide_intervals([[10, 50], [51, 66]]),
+    # #                    np.array([[10, 25], [26, 41], [42, 50], [51, 66]]))
+    # # assert np.allclose(divide_intervals([[10, 50], [51, 66], [67, 97]]),
+    # #                    np.array([[10, 25], [26, 41], [42, 50], [51, 66], [67, 82], [83, 97]]))
 
     def run(self, video_path: PathLike):
         n_frames, features, fps = self.get_features(video_path)

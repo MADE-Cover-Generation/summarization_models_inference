@@ -25,13 +25,17 @@ First move to the source folder:
 
 Single video:
 
-`python inference.py pglsum --source ../custom_data/videos/source_video_name.mp4 --save-path ./output/summary_video_name.mp4`
+`python inference.py pglsum --source ../custom_data/videos/source_video_name.mp4 --save-path ./output/summary_video_name.mp4 --sample-rate 30 --final-frame-length 30` 
 
 Folder of videos:
 
-`python inference.py pglsum --source ../custom_data/videos/source_video_folder --save-path ./output/summary_videos_folder`
+`python inference.py pglsum --source ../custom_data/videos/source_video_folder --save-path ./output/summary_videos_folder --sample-rate 30 --final-frame-length 30`
 
 Eligible model names: `pglsum` - PGL-SUM, `casum` - CA-SUM, `dsnet_ab` - DSNet anchor based and `dsnet_af` - DSNet anchor free.
+
+`--sample-rate 30` means the model will take every 30th frame for analysis 
+
+`--final-frame-length 30` means the final video summary will have 30 frames (around 30 sec video)
 
 
 
