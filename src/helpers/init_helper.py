@@ -49,10 +49,12 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--nms-thresh', type=float, default=0.5)
 
     # inference
-    parser.add_argument('--sample-rate', type=int, default=15)
+    parser.add_argument('--sample-rate', type=int, default=30)
     parser.add_argument('--source', type=str, default=None)
     parser.add_argument('--save-path', type=str, default=None)
-    parser.add_argument('--final-frame-length', type=int, default=30)
+    parser.add_argument('--final-frame-length', type=int, default=27)
+    parser.add_argument('--max-shot-length', type=int, default=10) # 10*30
+    parser.add_argument('--min-penalty-shot-length', type=int, default=3)  # 8*30
 
     # common model config dsnet
     parser.add_argument('--base-model', type=str, default='attention',

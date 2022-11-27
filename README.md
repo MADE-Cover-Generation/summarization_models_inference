@@ -35,7 +35,10 @@ Eligible model names: `pglsum` - PGL-SUM, `casum` - CA-SUM, `dsnet_ab` - DSNet a
 
 `--sample-rate 30` means the model will take every 30th frame for analysis 
 
-`--final-frame-length 30` means the final video summary will have 30 frames (around 30 sec video)
+`--final-frame-length 30` means the final video summary will have 30 frames (around 30 sec video, 26-37 sec depending on frames per second in the initial video)
 
+`--max-shot-length 10` means a single shot won't be longer than 10 frames
+
+`--min-penalty-shot-length 3` means that a shot of 3 or less frames will have length penalty and therefore will be less likely to appear in the final summary
 
 

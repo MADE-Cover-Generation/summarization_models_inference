@@ -4,10 +4,10 @@ from knapsack_implementation import knapSack
 
 # MAX_FRAMES_IN_SUMMARY = 15 * 30  # 15 frames, 30 sec
 
-MIN_PENALTY_SHOT_LENGTH = 6 * 30
-MIN_SHOT_LENGTH = 4 * 30
+# MIN_PENALTY_SHOT_LENGTH = 3 * 30
+# MIN_SHOT_LENGTH = 2 * 30
 
-def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions, final_frame_length):
+def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions, final_frame_length, min_penalty_shot_length):
     """ Generate the automatic machine summary, based on the video shots; the frame importance scores; the number of
     frames in the original video and the position of the sub-sampled frames of the original video.
 
@@ -44,9 +44,9 @@ def generate_summary(all_shot_bound, all_scores, all_nframes, all_positions, fin
         for shot in shot_bound:
             shot_lengths.append(shot[1] - shot[0] + 1)
 
-            if (shot[1] - shot[0]) < MIN_SHOT_LENGTH:
-                length_penalty = 0.
-            elif (shot[1] - shot[0]) < MIN_PENALTY_SHOT_LENGTH:
+            if (shot[1] - shot[0]) < min_penalty_shot_length / 2.:
+                length_penalty = 0.0001
+            elif (shot[1] - shot[0]) < min_penalty_shot_length:
                 length_penalty = 0.1
             else:
                 length_penalty = 1.

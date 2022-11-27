@@ -16,9 +16,9 @@ ort_session = onnxruntime.InferenceSession("../models/feature_extraction_googlen
 
 from kts.cpd_auto import cpd_auto
 
-SAMPLE_RATE = 30
-MAX_SHOT_LENGTH = 15 * 30 # 15 frames and 30 sec
-MIN_SHOT_LENGTH = 5 * 30  # 5 frames
+# SAMPLE_RATE = 30
+# MAX_SHOT_LENGTH = 8 * 30 # 15 frames and 30 sec
+MIN_SHOT_LENGTH = 3 * 30  # 3 frames
 N_FRAMES_IN_ONE_PART = 300 # for KTS
 
 logger = logging.getLogger()
@@ -103,7 +103,7 @@ class VideoPreprocessor(object):
         features = np.array(features)
         return n_frames, features, fps
 
-    def kts(self, n_frames, features, divide_features=True, divide_intervals_shorter=True):
+    def kts(self, n_frames, features, max_shot_length, divide_features=True, divide_intervals_shorter=True):
         start_time = time.time()
         seq_len = len(features)
         logger.info(f"seq_len: {seq_len}")
@@ -142,21 +142,21 @@ class VideoPreprocessor(object):
         change_points *= self.sample_rate
         change_points = np.hstack((0, change_points, n_frames))
         begin_frames = change_points[:-1]
-        end_frames = change_points[1:] - self.sample_rate
+        end_frames = change_points[1:] - self.sample_rate # not include the beginning of the next shot
         change_points = np.vstack((begin_frames, end_frames)).T
 
         change_points = np.array([cp for cp in change_points if cp[1] - cp[0] > self.sample_rate])
 
         divide_intervals_start = time.time()
         if divide_intervals_shorter:
-            change_points = self.divide_intervals(change_points)
+            change_points = self.divide_intervals(change_points, max_shot_length)
         logger.info(f"divide_intervals time: {time.time() - divide_intervals_start}")
 
         n_frame_per_seg = end_frames - begin_frames
         logger.info(f"VideoPreprocessor kts time: {time.time() - start_time}")
         return change_points, n_frame_per_seg, picks
 
-    def process_interval(self, interval, max_shot_length=MAX_SHOT_LENGTH,
+    def process_interval(self, interval, max_shot_length,
                          min_shot_length=MIN_SHOT_LENGTH):
 
         start_interval = interval[0]
@@ -191,7 +191,7 @@ class VideoPreprocessor(object):
 
         return divided_interval
 
-    def divide_intervals(self, change_points, max_shot_length=MAX_SHOT_LENGTH):
+    def divide_intervals(self, change_points, max_shot_length):
         final_intervals = []
 
         for interval in change_points:
@@ -255,7 +255,7 @@ class VideoPreprocessor(object):
     # # assert np.allclose(divide_intervals([[10, 50], [51, 66], [67, 97]]),
     # #                    np.array([[10, 25], [26, 41], [42, 50], [51, 66], [67, 82], [83, 97]]))
 
-    def run(self, video_path: PathLike):
+    def run(self, video_path: PathLike, max_shot_length):
         n_frames, features, fps = self.get_features(video_path)
-        cps, nfps, picks = self.kts(n_frames, features)
+        cps, nfps, picks = self.kts(n_frames, features, max_shot_length)
         return n_frames, features, cps, nfps, picks, fps

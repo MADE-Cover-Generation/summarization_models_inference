@@ -124,11 +124,19 @@ def main():
     if os.path.isfile(args.source):
         videos = [args.source]
         save_path_list = [args.save_path]
+
+        save_dir = args.save_path.rsplit(sep='/', maxsplit=1)[0]
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
     else:
         videos = [video for video in os.listdir(args.source) if video.endswith('.mp4')]
         save_path_list = [os.path.join(args.save_path,
                                        args.model.lower() + '_' + video_name) for video_name in videos]
         videos = [os.path.join(args.source, video) for video in videos]
+
+        if not os.path.exists(args.save_path):
+            os.makedirs(args.save_path)
 
     logger.info(f"videos: {' | '.join(videos)}")
     logger.info(f"save_path_list: {' | '.join(save_path_list)}")
@@ -138,7 +146,8 @@ def main():
         video_start_time = time.time()
         logger.info(f'\nProcessing video: {video_source}')
         video_proc = video_helper.VideoPreprocessor(args.sample_rate)
-        n_frames, frame_features, cps, nfps, picks, fps = video_proc.run(video_source)
+        n_frames, frame_features, cps, nfps, picks, fps = video_proc.run(video_source,
+                                                                         args.max_shot_length * 30)
         frame_features_len = len(frame_features)
 
         logger.info(cps)
@@ -157,7 +166,9 @@ def main():
                 scores = vsumm_helper.bbox2scores(
                     frame_features_len, pred_cls, pred_bboxes)
 
-                pred_summ = generate_summary([cps], [scores], [n_frames], [picks], args.final_frame_length * 30)[0]
+                pred_summ = generate_summary([cps], [scores], [n_frames], [picks],
+                                             args.final_frame_length * 30,
+                                             args.min_penalty_shot_length)[0]
 
                 # pred_summ = vsumm_helper.bbox2summary(
                 #     frame_features_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
@@ -168,7 +179,9 @@ def main():
 
                 scores, _ = model(frame_features)  # [1, seq_len]
                 scores = scores.squeeze(0).cpu().numpy().tolist()
-                pred_summ = generate_summary([cps], [scores], [n_frames], [picks], args.final_frame_length * 30)[0]
+                pred_summ = generate_summary([cps], [scores], [n_frames], [picks],
+                                             args.final_frame_length * 30,
+                                             args.min_penalty_shot_length * 30)[0]
 
             else:
                 raise ValueError('Invalid model type', args.model)
@@ -176,6 +189,10 @@ def main():
         logger.info(f"len pred_summ {len(pred_summ)}, selected: {sum(pred_summ)}")
         boundaries = np.array(get_boundaries(pred_summ)) / fps
         logger.info(boundaries)
+
+        logger.info(f"N boundaries: {len(boundaries)}")
+        logger.info(f"max boundary len: {max([end - begin for (begin, end) in boundaries])}")
+        logger.info(f"min boundary len: {min([end - begin for (begin, end) in boundaries])}")
 
         logger.info(f'Predicting summary: {time.time() - last_step_time}')
         last_step_time = time.time()
