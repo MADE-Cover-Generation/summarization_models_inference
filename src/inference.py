@@ -170,9 +170,6 @@ def main():
                                              args.final_frame_length * 30,
                                              args.min_penalty_shot_length)[0]
 
-                # pred_summ = vsumm_helper.bbox2summary(
-                #     frame_features_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
-
             elif args.model.lower() in ['casum', 'pglsum']:
                 frame_features = torch.Tensor(frame_features).view(-1, 1024)
                 frame_features = frame_features.to(model.linear_1.weight.device)
