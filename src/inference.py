@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 
-from helpers import init_helper, bbox_helper, video_helper, vsumm_helper
+from helpers import init_helper, bbox_helper, video_helper, vsumm_helper, maniqa_helper
 from modules.model_zoo import get_model
 from generate_summary import generate_summary
 
@@ -45,8 +45,16 @@ def get_boundaries(list_of_frames_binary):
     return result
 
 
-def save_output_video(source, boundaries, save_path, prediction_summary, write_with_moviepy=False):
+def save_output(source, boundaries, save_path, prediction_summary, thumbnail_indexes, write_with_moviepy=False):
+    if thumbnail_indexes != None:
+        for i in range(0, len(thumbnail_indexes)):
+            cap = cv2.VideoCapture(source)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, thumbnail_indexes[i])
+            _, frame = cap.read()
+            output_path = f"{os.path.dirname(save_path)}thumbnail_{i}.jpg" 
+            cv2.imwrite(output_path, frame)
     # write_with_moviepy if True write video summary with audio
+    
     if write_with_moviepy:
         logger.info('Moviepy write summary')
         clip = VideoFileClip(source)
@@ -138,6 +146,12 @@ def main():
         if not os.path.exists(args.save_path):
             os.makedirs(args.save_path)
 
+    if args.maniqa_path != None:
+        maniqa =  maniqa_helper.ManiqaHelper(args.maniqa_path)
+    else:
+        maniqa = None
+
+
     logger.info(f"videos: {' | '.join(videos)}")
     logger.info(f"save_path_list: {' | '.join(save_path_list)}")
 
@@ -145,13 +159,10 @@ def main():
         # load video and extract features
         video_start_time = time.time()
         logger.info(f'\nProcessing video: {video_source}')
-        video_proc = video_helper.VideoPreprocessor(args.sample_rate)
+        video_proc = video_helper.VideoPreprocessor(args.sample_rate, maniqa, )
         n_frames, frame_features, cps, nfps, picks, fps = video_proc.run(video_source,
                                                                          args.max_shot_length * 30)
         frame_features_len = len(frame_features)
-
-        logger.info(cps)
-
         logger.info(f'Preprocessing source video time: {time.time() - last_step_time}')
         last_step_time = time.time()
 
@@ -194,7 +205,12 @@ def main():
         logger.info(f'Predicting summary: {time.time() - last_step_time}')
         last_step_time = time.time()
 
-        save_output_video(video_source, boundaries, save_path, pred_summ)
+        thumbnail_indexes = None
+        if maniqa != None:
+            thumbnail_indexes = maniqa.get_best_frames_indexes()
+            logger.info(thumbnail_indexes)
+
+        save_output(video_source, boundaries, save_path, pred_summ, thumbnail_indexes)
 
         logger.info(f'Writing summary video: {time.time() - last_step_time}')
 

@@ -8,6 +8,7 @@ from PIL import Image
 from numpy import linalg
 from torchvision import transforms
 import time
+from .maniqa_helper import ManiqaHelper
 
 import onnx
 import onnxruntime
@@ -62,37 +63,51 @@ class FeatureExtractor(object):
 
 
 class VideoPreprocessor(object):
-    def __init__(self, sample_rate: int) -> None:
+    def __init__(self, sample_rate: int, maniqa: ManiqaHelper) -> None:
         self.model = FeatureExtractor()
         self.sample_rate = sample_rate
+        self.maniqa = maniqa
 
-    def get_features(self, video_path: PathLike):
+    def get_features(self, video_path: PathLike, number_of_previews: int = 4):
         video_path = Path(video_path)
         cap = cv2.VideoCapture(str(video_path))
         assert cap is not None, f'Cannot open video: {video_path}'
 
         fps = cap.get(cv2.CAP_PROP_FPS)
 
+        scores = []
         features = []
         n_frames = 0
-
+        frames_in_group_counter = 0
         length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         logger.info(f"length: {length}")
+
+        size_of_preview_group = length // number_of_previews 
 
         start_time = time.time()
 
         while True:
             ret, frame = cap.read()
             if not ret:
+                self.maniqa.find_best_frame_index(scores)
                 break
-
+            
             if n_frames % self.sample_rate == 0:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                if self.maniqa != None:
+                    indexed_scores = self.maniqa.inference(n_frames, frame)
+                    scores.append(indexed_scores)
+                    if frames_in_group_counter + 1 >= size_of_preview_group:
+                        self.maniqa.find_best_frame_index(scores)
+                        frames_in_group_counter = 0
+                        scores = []
 
                 feat = self.model.run(frame)
                 features.append(feat)
-
+                
             n_frames += 1
+            frames_in_group_counter += 1
 
             if n_frames % 10000 == 0:
                 logger.info(f"Processed {n_frames} / {length} n_frames")

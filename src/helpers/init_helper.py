@@ -56,6 +56,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--max-shot-length', type=int, default=8) # 10*30
     parser.add_argument('--min-penalty-shot-length', type=int, default=5)  # 8*30
 
+    # maniqa model 
+    parser.add_argument('--maniqa_path', type=str, default=None)
+
     # common model config dsnet
     parser.add_argument('--base-model', type=str, default='attention',
                         choices=['attention', 'lstm', 'linear', 'bilstm',
