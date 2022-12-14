@@ -45,7 +45,7 @@ def get_boundaries(list_of_frames_binary):
     return result
 
 
-def save_output_video(source, boundaries, save_path, prediction_summary, write_with_moviepy=False):
+def save_output_video(source, boundaries, save_path, prediction_summary, write_with_moviepy=True):
     # write_with_moviepy if True write video summary with audio
     if write_with_moviepy:
         logger.info('Moviepy write summary')
@@ -55,7 +55,8 @@ def save_output_video(source, boundaries, save_path, prediction_summary, write_w
         clips = [clip.subclip(scene[0], scene[1]) for scene in boundaries]
 
         # concatenating both the clips
-        final = concatenate_videoclips(clips)
+        final_with_audio = concatenate_videoclips(clips)
+        final = final_with_audio.without_audio()
         final.write_videofile(save_path)
 
     else:
