@@ -1,44 +1,75 @@
-## Description
+  Video Summarization Tool
+  --------------------------
+  ## Description
 
-This repository is intended for generating video summaries using 4 cutting edge summarization models: PGL-SUM, CA-SUM, DSNet anchor based and DSNet anchor free. Models are pretrained on TVSum and SumMe datasets.
+This tool generates video summaries using four state-of-the-art
+summarization models:
 
-## Installation
-Create virtual environment:
+-   PGL-SUM
+-   CA-SUM
+-   DSNet anchor based
+-   DSNet anchor free
 
-`python -m venv .summarization`
+The models are pretrained on the TVSum and SumMe datasets.
 
-Activate virtual environment:
+# Installation
 
-`source .summarization/bin/activate`
+1.  **Set up a virtual environment**:
 
-Install dependencies:
+    ``` bash
+    python -m venv .summarization
+    ```
 
-`pip install -r requirements.txt`
+2.  **Activate the virtual environment**:
 
-## Usage
+    ``` bash
+    source .summarization/bin/activate
+    ```
 
-Summary generation:
+3.  **Install required packages**:
 
-First move to the source folder:
+    ``` bash
+    pip install -r requirements.txt
+    ```
 
-`cd src`
+# Usage
 
-Single video:
+## Summary Generation
 
-`python inference.py pglsum --source ../custom_data/videos/source_video_name.mp4 --save-path ./output/summary_video_name.mp4 --sample-rate 30 --final-frame-length 30` 
+1.  **Navigate to the source folder**:
 
-Folder of videos:
+    ``` bash
+    cd src
+    ```
 
-`python inference.py pglsum --source ../custom_data/videos/source_video_folder --save-path ./output/summary_videos_folder --sample-rate 30 --final-frame-length 30`
+2.  **Generate summary for a single video**:
 
-Eligible model names: `pglsum` - PGL-SUM, `casum` - CA-SUM, `dsnet_ab` - DSNet anchor based and `dsnet_af` - DSNet anchor free.
+    ``` bash
+    python inference.py pglsum --source ../custom_data/videos/source_video_name.mp4 --save-path ./output/summary_video_name.mp4 --sample-rate 30 --final-frame-length 30
+    ```
 
-`--sample-rate 30` means the model will take every 30th frame for analysis 
+3.  **Generate summaries for a folder of videos**:
 
-`--final-frame-length 27` means the final video summary will have 30 frames (around 27 sec video, 23-31 sec depending on frames per second in the initial video)
+    ``` bash
+    python inference.py pglsum --source ../custom_data/videos/source_video_folder --save-path ./output/summary_videos_folder --sample-rate 30 --final-frame-length 30
+    ```
 
-`--max-shot-length 8` means a single shot won't be longer than 8 frames
+## Model Name References
 
-`--min-penalty-shot-length 5` means that a shot of 5 or less frames will have length penalty and therefore will be less likely to appear in the final summary
+-   `pglsum` - PGL-SUM
+-   `casum` - CA-SUM
+-   `dsnet_ab` - DSNet anchor based
+-   `dsnet_af` - DSNet anchor free
 
+## Parameters Explanation
 
+-   `--sample-rate 30`: The model analyzes every 30th frame.
+-   `--final-frame-length 30`: The resulting video summary will contain
+    around 30 frames, roughly equivalent to 27 seconds. This duration
+    can vary between 23-31 seconds depending on the frames per second of
+    the original video.
+-   `--max-shot-length 8`: A single shot in the summary won\'t exceed 8
+    frames.
+-   `--min-penalty-shot-length 5`: Shots that are 5 frames or shorter
+    will incur a length penalty, thus making them less likely to appear
+    in the final summary.
